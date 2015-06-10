@@ -1,0 +1,124 @@
+% !TeX spellcheck = en_US
+\documentclass[a4paper]{article}
+
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[margin=1in]{geometry}
+
+\title{Si4 Algorithm Description}
+\author{Mikhail Katliar}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+Your abstract.
+\end{abstract}
+
+\section{Introduction}
+
+We are interested in
+$$
+p(\theta \mid y)
+$$
+
+Minimum squared error estimate:
+$$
+\hat{\theta}(y) = \int_{-\pi}^\pi p(\theta | y) \theta d \theta
+$$
+
+$$
+p(\theta | y) = \frac{p(y, \theta)}{p(y)} = \frac{p(y| \theta) p(\theta)}{p(y)} \propto p(y| \theta)
+$$
+
+Given a known source signal $x$:
+\begin{equation}
+p(y | x, \theta) = \prod_{k=0}^{K-1}\prod_{i=0}^{N-1} \frac{1}{\sqrt{2\pi} \sigma_n} \exp\left(-\frac{(y_k[i] - x[i - \tau_k(\theta)])^2}{2\sigma_n^2}\right)
+\label{eq:likelihood y|x,theta}
+\end{equation}
+$\tau_k$ - delay in $k$-th channel.
+
+Conditional $p(y\theta)$ can be expressed as
+$$
+p(y|\theta) = \int_x p(y \mid x, \theta) p(x \mid \theta) dx
+$$
+
+assuming white Gaussian noise model of $x$
+$$
+p(x \mid \theta) = \prod_{j=-\infty}^\infty \frac{1}{\sqrt{2\pi}\sigma_x} \exp\left(-\frac{x[j]^2}{2\sigma_x^2}\right)
+$$
+combining it with \eqref{eq:likelihood y|x,theta} gives
+\begin{multline}
+p(y, x \mid \theta)=\left[\prod_{k=0}^{K-1}\prod_{i=0}^{N-1} \frac{1}{\sqrt{2\pi} \sigma_n} \exp\left(-\frac{(y_k[i] - x[i - \tau_k(\theta)])^2}{2\sigma_n^2}\right)\right] \prod_{j=-\infty}^\infty \frac{1}{\sqrt{2\pi}\sigma_x} \exp\left(-\frac{x[j]^2}{2\sigma_x^2}\right) = \\
+= \prod_{j=-\infty}^\infty \left[ \frac{1}{\sqrt{2\pi}\sigma_x} \exp\left(-\frac{x[j]^2}{2\sigma_x^2}\right) \prod_{k \in S(j,\theta)} \frac{1}{\sqrt{2\pi} \sigma_n} \exp\left(-\frac{(y_k[j+\tau_k(\theta)] - x[j])^2}{2\sigma_n^2}\right) \right]
+\end{multline}
+where
+$$
+S(j,\theta) = \{k : 0 \leq j+\tau_k(\theta) < N\}
+$$
+
+Get rid of $x$ (marginalize out):
+\begin{multline}
+p(y|\theta) = \int_x p(y | x, \theta) p(x) dx = \\
+= \prod_{j=-\infty}^\infty \int_{-\infty}^\infty \left[ \frac{1}{\sqrt{2\pi}\sigma_x} \exp\left(-\frac{x[j]^2}{2\sigma_x^2}\right) \prod_{k \in S(j,\theta)} \frac{1}{\sqrt{2\pi} \sigma_n} \exp\left(-\frac{(y_k[j+\tau_k(\theta)] - x[j])^2}{2\sigma_n^2}\right) \right] dx[j] = \\
+= \prod_{j=-\infty}^\infty \int_{-\infty}^\infty \left[ \frac{1}{\sqrt{2\pi}\sigma_x} \left(\frac{1}{\sqrt{2\pi} \sigma_n}\right)^{|S(j,\theta)|} \exp\left(-\frac{x[j]^2}{2\sigma_x^2} - \sum_{k \in S(j,\theta)} \frac{(y_k[j+\tau_k(\theta)] - x[j])^2}{2\sigma_n^2}\right) \right] dx[j] = \\
+= \prod_{j=-\infty}^\infty  \left(\frac{1}{\sqrt{2\pi} \sigma_n}\right)^{|S(j,\theta)|} \int_{-\infty}^\infty \frac{1}{\sqrt{2\pi}\sigma_x}\exp\left(-\frac{x[j]^2}{2\sigma_x^2} - \sum_{k \in S(j,\theta)} \frac{(y_k[j+\tau_k(\theta)] - x[j])^2}{2\sigma_n^2}\right) dx[j] = \\
+= \left(\frac{1}{\sqrt{2\pi} \sigma_n}\right)^{KN} \prod_{j=-\infty}^\infty  \int_{-\infty}^\infty\frac{1}{\sqrt{2\pi}\sigma_x} \exp\left(-\frac{x[j]^2}{2\sigma_x^2} - \sum_{k \in S(j,\theta)} \frac{(y_k[j+\tau_k(\theta)] - x[j])^2}{2\sigma_n^2}\right) dx[j].
+\label{eq:likelihood y|theta}
+\end{multline}
+Transforming the expression in braces:
+\begin{multline}
+-\frac{x[j]^2}{2\sigma_x^2} - \sum_{k \in S(j,\theta)} \frac{(y_k[j+\tau_k(\theta)] - x[j])^2}{2\sigma_n^2} =  \\
+= -\frac{1}{2} \left( \frac{1}{\sigma_x^2}x[j]^2  + \frac{|S(j,\theta)|}{\sigma_n^2} x[j]^2 - \frac{2}{\sigma_n^2} x[j] \sum_{k \in S(j,\theta)} y_k[j+\tau_k(\theta)] + \frac{1}{\sigma_n^2}\sum_{k \in S(j,\theta)} y_k[j+\tau_k(\theta)]^2 \right)
+\end{multline}
+defining
+\begin{align*}
+&M(j,\theta) = \sum_{k \in S(j,\theta)} y_k[j+\tau_k(\theta)] \\
+&R^2(j,\theta) = \sum_{k \in S(j,\theta)} y_k[j+\tau_k(\theta)]^2
+\end{align*}
+we can rewrite the expression as
+\begin{equation}
+-\frac{1}{2} \left( \frac{1}{\sigma_x^2}x[j]^2  + \frac{|S(j,\theta)|}{\sigma_n^2} x[j]^2 - \frac{2}{\sigma_n^2} M(j,\theta) x[j] + \frac{1}{\sigma_n^2}R^2(j,\theta) \right)
+\end{equation}
+
+Calculating the integral:
+\begin{multline}
+\int_{-\infty}^\infty \frac{1}{\sqrt{2\pi}\sigma_x} \exp\left[-\frac{1}{2} \left( \frac{1}{\sigma_x^2}x[j]^2  + \frac{|S(j,\theta)|}{\sigma_n^2} x[j]^2 - \frac{2}{\sigma_n^2} M(j,\theta) x[j] + \frac{1}{\sigma_n^2}R(j,\theta) \right)\right] dx[j] = \\
+= \frac{1} {\sqrt{|S(j,\theta)|\sigma_x^2/\sigma_n^2+1}}\exp \left[{\frac{1}{2} \left(\frac{M^2(j,\theta)  \sigma_x^2}{|S(j,\theta)| \sigma_n^2 \sigma_x^2+\sigma_n^4}-\frac{R^2(j,\theta) }{\sigma_n^2}\right)}\right] = \\
+= \frac{1} {\sqrt{|S(j,\theta)|\sigma_x^2/\sigma_n^2+1}} \exp \left[{\frac{1}{2\sigma_n^2} \left(\frac{  \sigma_x^2}{|S(j,\theta)| \sigma_x^2+\sigma_n^2}M^2(j,\theta)-R^2(j,\theta)\right)}\right]
+\end{multline}
+Substituting it into \eqref{eq:likelihood y|theta}
+\begin{multline}
+p(y \mid \theta) = \left(\frac{1}{\sqrt{2\pi} \sigma_n}\right)^{KN} \times \\ \times \prod_{j=-\infty}^\infty  \frac{1} {\sqrt{|S(j,\theta)|\sigma_x^2/\sigma_n^2+1}} \exp \left[{\frac{1}{2\sigma_n^2} \left(\frac{  \sigma_x^2}{|S(j,\theta)| \sigma_x^2+\sigma_n^2}M^2(j,\theta)-R^2(j,\theta)\right)}\right]
+\end{multline}
+Since $|S(j,\theta)|=0$ implies $M(j,\theta)=0$, $R^2(j, \theta)=0$, the product term for such $j$ becomes $1$. We can rewrite
+\begin{multline}
+p(y \mid \theta) \propto \prod_{j : |S(j,\theta)|>0} \frac{1} {\sqrt{|S(j,\theta)|\sigma_x^2/\sigma_n^2+1}} \exp \left[{\frac{1}{2\sigma_n^2} \left(\frac{  \sigma_x^2}{|S(j,\theta)| \sigma_x^2+\sigma_n^2}M^2(j,\theta)-R^2(j,\theta)\right)}\right]= \\
+= \prod_{j : |S(j,\theta)|>0} \frac{1} {\sqrt{|S(j,\theta)|\sigma_x^2/\sigma_n^2+1}} \exp \left[{\frac{1}{2\sigma_n^2} \left(\frac{  \sigma_x^2 / \sigma_n^2}{|S(j,\theta)| \sigma_x^2 / \sigma_n^2+1}M^2(j,\theta)-R^2(j,\theta)\right)}\right] = \\
+= \prod_{j : |S(j,\theta)|>0} \frac{\sigma_n/\sigma_x} {\sqrt{|S(j,\theta)|+(\sigma_n/\sigma_x)^2}} \exp \left[{\frac{1}{2\sigma_n^2} \left(\frac{1}{|S(j,\theta)|+(\sigma_n/\sigma_x)^2}M^2(j,\theta)-R^2(j,\theta)\right)}\right]
+\end{multline}
+Assuming $(\sigma_n/\sigma_x) \ll 1$
+\begin{equation}
+p(y \mid \theta) \propto  \prod_{j : |S(j,\theta)|>0} \frac{1} {\sqrt{|S(j,\theta)|}} \exp \left[{\frac{1}{2\sigma_n^2} \left(\frac{1}{|S(j,\theta)|}M^2(j,\theta)-R^2(j,\theta)\right)}\right]
+\end{equation}
+$|S(j,\theta)|=1$ implies $M^2(j,\theta)=R^2(j,\theta)$ and hence the product term in the last expression becomes~$1$. Include only the terms with $|S(j,\theta)|>1$:
+\begin{equation}
+p(y \mid \theta) \propto  \prod_{j : |S(j,\theta)|>1} \frac{1} {\sqrt{|S(j,\theta)|}} \exp \left[{\frac{1}{2\sigma_n^2} \left(\frac{1}{|S(j,\theta)|}M^2(j,\theta)-R^2(j,\theta)\right)}\right]
+\end{equation}
+Taking logarithm:
+\begin{equation}
+\log p(y \mid \theta) =  \sum_{j : |S(j,\theta)|>1} -\frac{1} {2}\log|S(j,\theta)| +{\frac{1}{2\sigma_n^2} \left(\frac{1}{|S(j,\theta)|}M^2(j,\theta)-R^2(j,\theta)\right)}
+\end{equation}
+
+Entropy:
+$$
+H = -\int_{-\pi}^\pi p(\theta|y) \log p(\theta|y) d\theta
+$$
+
+$$
+\tau_k(\theta) = R \cos(\theta - \phi_k)
+$$
+
+\end{document}

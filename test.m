@@ -80,3 +80,53 @@ end
 if make_video
     vw.close();
 end
+
+%%
+window_len = 5000;
+window_ofs = 2500;
+
+N = size(data, 2);    
+nW = floor((N - window_len) / window_ofs + 1);
+w_begin = (0 : nW - 1) * window_ofs + 1;
+
+p1 = zeros(size(p, 1), nW);
+
+for iw = 1 : nW
+    % Current window range.
+    range = w_begin(iw) : w_begin(iw) + window_len - 1;
+
+    % Calculate the power for current window.
+    p1(:, iw) = mean(p(:, range), 2);
+end
+
+%% Animated polar plot 2.
+make_video = false;
+
+if make_video
+    vw = VideoWriter('out.avi');
+    vw.FrameRate = 10;
+    vw.open();
+end
+
+p1_max = max(p1(:));
+cla();
+% Add an invisible line at maximum radius to make all polar plots on
+% the same scale.
+% P = polar(theta, p1_max * ones(size(theta)));
+% set(P, 'Visible', 'off')
+% hold on;
+    
+for i = 1 : size(p1, 2)
+    lin = polar(theta.', p1(:, i));
+    [val, ind] = max(p1(:, i));
+    max_marker = polar(theta(ind), val, '.');
+    max_marker.Color = lin.Color;
+    drawnow();
+    if make_video
+        vw.writeVideo(getframe(gca()));
+    end
+end
+
+if make_video
+    vw.close();
+end

@@ -1,5 +1,5 @@
 function y_align = signal_shift(y, tau, shifttype)
-    % Shift channels of signal y by corresponding integer delay tau.
+    % Shift channels of signal y by corresponding delay tau.
     % tau must be a column vector
     % with the same number of rows as y, equal to number of channels.
     % Positive delays mean shift to the right (lag), negative to the left
@@ -21,7 +21,7 @@ function y_align = signal_shift(y, tau, shifttype)
             y_align = NaN(K, N + tau_max - tau_min);
 
             for k = 1 : K
-                y_align(k, tau_max - tau(k) + (1 : N)) = y(k, :);
+                y_align(k, tau(k) - tau_min + (1 : N)) = y(k, :);
             end
         case 'circular'
             y_align = zeros(size(y));

@@ -13,8 +13,12 @@ function r = sensor_position()
     % The channels are places clockwise in the hardware, but the angle
     % is counted counterclockwise. Therefore, channel 1 mic is placed at
     % angle -2*pi/3 and channel 2 mic is at 2*pi/3.
-    phi = [0; -2 * pi / 3; 2 * pi / 3];                
-    r = R * [cos(phi), sin(phi)];
+    phi = [0, -2 * pi / 3, 2 * pi / 3];
+    
+    % Elevation of microphones.
+    theta = [0, 0, 0];
+    
+    r = R * direction(phi, theta);
 end
 
 

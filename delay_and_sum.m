@@ -6,7 +6,7 @@ function y1 = delay_and_sum(y, tau)
     
     y1 = zeros(M, N);
     for i = 1 : M
-        y1(i, :) = mean(signal_shift(y, tau(:, i)));
+        y1(i, :) = sum(signal_shift(y, tau(:, i)));
     end
 end
 

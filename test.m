@@ -83,9 +83,9 @@ end
 
 %%
 window_len = 5000;
-window_ofs = 2500;
+window_ofs = 1000;
 
-N = size(data, 2);    
+N = size(p, 2);    
 nW = floor((N - window_len) / window_ofs + 1);
 w_begin = (0 : nW - 1) * window_ofs + 1;
 
@@ -109,19 +109,23 @@ if make_video
 end
 
 p1_max = max(p1(:));
-cla();
-% Add an invisible line at maximum radius to make all polar plots on
-% the same scale.
-% P = polar(theta, p1_max * ones(size(theta)));
-% set(P, 'Visible', 'off')
-% hold on;
+clf();
     
 for i = 1 : size(p1, 2)
+%     hold on;
     lin = polar(theta.', p1(:, i));
-    [val, ind] = max(p1(:, i));
-    max_marker = polar(theta(ind), val, '.');
-    max_marker.Color = lin.Color;
+        
+    % Add an invisible line at maximum radius to make all polar plots on
+    % the same scale.
+%     P = polar(theta, p1_max * ones(size(theta)));
+%     set(P, 'Visible', 'off')
+    %     [val, ind] = max(p1(:, i));
+%     max_marker = polar(theta(ind), val, '.');
+    %     max_marker.Color = lin.Color;
+%     set(gca, 'XLim', [-p1_max, p1_max]);
+%     set(gca, 'YLim', [-p1_max, p1_max]);
     drawnow();
+
     if make_video
         vw.writeVideo(getframe(gca()));
     end

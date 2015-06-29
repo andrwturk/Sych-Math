@@ -1,7 +1,7 @@
 function p = beamforming(y, tau)
 % Frequency domain beamforming.
     [K, N] = size(y);
-    assert(mod(N, 2) == 1);
+%     assert(mod(N, 2) == 1);
     M = size(tau, 2);
     assert(size(tau, 1) == K);
     

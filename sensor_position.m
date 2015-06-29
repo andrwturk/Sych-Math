@@ -4,7 +4,8 @@ function r = sensor_position()
     % The two columns are x and y coordinates.
     
     % Distance between microphones.
-    L = 1;
+    %L = 1;
+    L = 0.335;
     n_rec = 3;
     
     % Radius of microphone circle.

@@ -1,7 +1,17 @@
 function p = beamforming(y, tau)
 % Frequency domain beamforming.
+    
+    % Append zeros to avoid overlapping of wrapped parts after circular shift.
+    y = [y, zeros(size(y, 1), ceil(max(tau(:))))];
+    
+    % Append zeros to make the number of time samples odd, for correct
+    % frequency-domain shift.
+    if mod(size(y, 2), 2) == 0
+        y(:, end + 1) = 0;
+    end
+    
     [K, N] = size(y);
-%     assert(mod(N, 2) == 1);
+    assert(mod(N, 2) == 1);
     M = size(tau, 2);
     assert(size(tau, 1) == K);
     

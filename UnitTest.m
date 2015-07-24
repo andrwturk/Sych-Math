@@ -3,7 +3,7 @@ classdef UnitTest < matlab.unittest.TestCase
     
     methods (Test)
         function testSensorPosition(testCase)
-            r = sensor_position();
+            r = sensor_position(1);
             testCase.verifyEqual(pairwise_distance(r.', r.'), [...
                 0, 1, 1;
                 1, 0, 1;
@@ -37,6 +37,48 @@ classdef UnitTest < matlab.unittest.TestCase
                 1]);
         end
         
+        function testBeamforming(testCase)
+            % Load test signal.
+            [y, fs] = read_data('data/test/066_00h_0m_02s-1.wav');
+            
+            % LP-filtering to remove high frequency noise and partially the
+            % shockwave.
+%             y = fft_bandpass(y, fs, [10, 500]);
+            
+            % Calculate frame length corresponding to 20ms time window.
+            frame_length = floor(0.02 * fs);
+            
+            % Cut the part of the signal corresponding to the muzzleflash.
+            start = 20400;
+            y = y(:, start : start + frame_length - 1);
+            
+            % Init sensor array.
+            v = sound_speed_air(293);
+            r = sensor_position() / v;
+            
+            % Init angles and lags.
+            phi = linspace(0, 2 * pi, 361);
+            theta = 0;
+            [Phi, Theta] = meshgrid(phi, theta);
+            tau = -r.' * direction(Phi(:).', Theta(:).') * fs;
+            
+            % Beamforming
+            p = beamforming(y, -tau);
+            p = reshape(p, size(Phi));
+            
+            figure;
+            plot(rad2deg(phi), p);
+            
+            % Find angle corresponding to maximum energy.
+            [~, ind] = max(p, [], 2);
+            phi_est = phi(ind);
+            
+            % Check that it equals to the expected value.
+            testCase.verifyEqual(phi_est, deg2rad(359), 'AbsTol', 1e-10);
+        end
+    end
+    
+    methods
         function testTimeDomainBeamforming(testCase)
             % Load one channel of a clap signal.
             [data, fs] = read_data('data/raw/002_00h_0m_47s');
@@ -63,6 +105,5 @@ classdef UnitTest < matlab.unittest.TestCase
             polar(phi.', p_sum);
         end
     end
-    
 end
 

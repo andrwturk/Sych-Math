@@ -1,11 +1,14 @@
-function r = sensor_position()
+function r = sensor_position(L)
     % Returns array of sensor coordinates in 2D.
     % Number of rows in r is equal to number of sensors.
     % The two columns are x and y coordinates.
     
-    % Distance between microphones.
-    %L = 1;
-    L = 0.335;
+    % L -- distance between microphones.
+    
+    if nargin < 1
+        L = 0.335;
+    end
+    
     n_rec = 3;
     
     % Radius of microphone circle.

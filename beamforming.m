@@ -1,5 +1,7 @@
 function p = beamforming(y, tau)
 % Frequency domain beamforming.
+% tau -- array of channel delays (in samples). Rows of tau correspond to channels,
+% columns correspond to different directions of arrival.
     
     % Append zeros to avoid overlapping of wrapped parts after circular shift.
     y = [y, zeros(size(y, 1), ceil(max(tau(:))))];

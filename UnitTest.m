@@ -76,6 +76,18 @@ classdef UnitTest < matlab.unittest.TestCase
             % Check that it equals to the expected value.
             testCase.verifyEqual(phi_est, deg2rad(359), 'AbsTol', 1e-10);
         end
+        
+        function testDatabaseReadAudioData(testCase)
+            db = Database();
+            
+            [data, fs] = db.getAudioData(1);            
+            testCase.verifyEqual(fs, 51000);
+            testCase.verifyEqual(size(data), [3, 16257]);
+            
+            [data, fs] = db.getAudioData(2);            
+            testCase.verifyEqual(fs, 51000);
+            testCase.verifyEqual(size(data), [3, 21423]);
+        end
     end
     
     methods

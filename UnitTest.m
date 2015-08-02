@@ -39,17 +39,18 @@ classdef UnitTest < matlab.unittest.TestCase
         
         function testBeamforming(testCase)
             % Load test signal.
-            [y, fs] = read_data('data/test/066_00h_0m_02s-1.wav');
+            db = Database();
+            [y, fs] = db.getAudioData(1);
             
             % LP-filtering to remove high frequency noise and partially the
             % shockwave.
-%             y = fft_bandpass(y, fs, [10, 500]);
+            y = fft_bandpass(y, fs, [10, 500]);
             
             % Calculate frame length corresponding to 20ms time window.
             frame_length = floor(0.02 * fs);
             
             % Cut the part of the signal corresponding to the muzzleflash.
-            start = 20400;
+            start = 6000;
             y = y(:, start : start + frame_length - 1);
             
             % Init sensor array.
@@ -62,12 +63,56 @@ classdef UnitTest < matlab.unittest.TestCase
             [Phi, Theta] = meshgrid(phi, theta);
             tau = -r.' * direction(Phi(:).', Theta(:).') * fs;
             
+            % Append zeros to make circular shift work like linear.
+            max_overlap = ceil(max(max(tau) - min(tau)));
+            y(:, end + 1 : end + max_overlap) = 0;
+            
             % Beamforming
             p = beamforming(y, -tau);
             p = reshape(p, size(Phi));
             
-            figure;
-            plot(rad2deg(phi), p);
+            % Find angle corresponding to maximum energy.
+            [~, ind] = max(p, [], 2);
+            phi_est = phi(ind);
+            
+            % Check that it equals to the expected value.
+            testCase.verifyEqual(phi_est, deg2rad(359), 'AbsTol', 1e-10);
+        end
+        
+        function testBeamforming_1024(testCase)
+            % Load test signal.
+            db = Database();
+            [y, fs] = db.getAudioData(1);
+            
+            % LP-filtering to remove high frequency noise and partially the
+            % shockwave.
+            y = fft_bandpass(y, fs, [10, 500]);
+            
+            % Calculate frame length corresponding to 20ms time window.
+            frame_length = 1024;
+            
+            % Cut the part of the signal corresponding to the muzzleflash.
+            start = 6000;
+            y = y(:, start : start + frame_length - 1);
+            
+            % Init sensor array.
+            v = sound_speed_air(293);
+            r = sensor_position() / v;
+            
+            % Init angles and lags.
+            phi = linspace(0, 2 * pi, 361);
+            theta = 0;
+            [Phi, Theta] = meshgrid(phi, theta);
+            tau = -r.' * direction(Phi(:).', Theta(:).') * fs;
+            
+            % Set tails to zero to make circular shift work like linear.
+            max_overlap = ceil(max(max(tau) - min(tau)));
+            y(:, end - max_overlap + 1 : end) = 0;
+            testCase.assertEqual(size(y, 2), frame_length);
+            
+            % Beamforming
+            p = beamforming(y, -tau);
+            p = reshape(p, size(Phi));
             
             % Find angle corresponding to maximum energy.
             [~, ind] = max(p, [], 2);

@@ -84,9 +84,9 @@ classdef UnitTest < matlab.unittest.TestCase
             db = Database();
             [y, fs] = db.getAudioData(1);
             
-            % LP-filtering to remove high frequency noise and partially the
+            % Frequency-of-interest range (in Hz). Used to remove high frequency noise and partially the
             % shockwave.
-            y = fft_bandpass(y, fs, [10, 500]);
+            freq_band = [10, 500];
             
             % Calculate frame length corresponding to 20ms time window.
             frame_length = 1024;
@@ -111,7 +111,7 @@ classdef UnitTest < matlab.unittest.TestCase
             testCase.assertEqual(size(y, 2), frame_length);
             
             % Beamforming
-            p = beamforming(y, -tau);
+            p = beamforming(y, -tau, freq_band / fs);
             p = reshape(p, size(Phi));
             
             % Find angle corresponding to maximum energy.

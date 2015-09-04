@@ -43,7 +43,7 @@ y = y(:, 90000 : 120000);
 clf; signal_plot(y, fs);
 
 %% Load new recordings from the field
-[y, fs] = read_data('data/wav/066_08h_8m_04s-1.wav');
+[y, fs] = read_data('data/wav/066_00h_0m_02s-1.wav');
 clf; signal_plot(y, fs);
 
 %% Load one channel of a clap signal.

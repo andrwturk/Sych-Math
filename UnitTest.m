@@ -68,7 +68,8 @@ classdef UnitTest < matlab.unittest.TestCase
             y(:, end + 1 : end + max_overlap) = 0;
             
             % Beamforming
-            p = beamforming(y, -tau);
+            y1 = beamforming(y, -tau);
+            p = sum(y1.^2, 2);
             p = reshape(p, size(Phi));
             
             % Find angle corresponding to maximum energy.

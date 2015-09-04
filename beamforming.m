@@ -1,4 +1,4 @@
-function p = beamforming(y, tau, freq_band)
+function y1 = beamforming(y, tau, freq_band)
 % Frequency domain beamforming.
 % tau -- array of channel delays (in samples). Rows of tau correspond to channels,
 % columns correspond to different directions of arrival.
@@ -21,7 +21,7 @@ function p = beamforming(y, tau, freq_band)
     M = size(tau, 2);
     assert(size(tau, 1) == K);
     
-    Y = fft(y, [], 2) / N;
+    Y = fft(y, [], 2);
     k = 0 : N - 1;
     k(k > N / 2) = k(k > N / 2) - N;
     
@@ -31,10 +31,11 @@ function p = beamforming(y, tau, freq_band)
     % Indices corresponding to the frequency band.
     ind = freq_band(1) <= abs(f) & abs(f) <= freq_band(2);
 
-    p = zeros(M, 1);
+    Y1 = zeros(M, N);
     parfor i = 1 : M
-        y1 = sum(Y(:, ind) .* exp(-2i * pi * tau(:, i) * f(ind)));
-        p(i) = y1 * y1';
+        Y1(i, ind) = sum(Y(:, ind) .* exp(-2i * pi * tau(:, i) * f(ind)));
     end
+    
+    y1 = ifft(Y1, [], 2);
 end
 

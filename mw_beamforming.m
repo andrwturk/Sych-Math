@@ -1,4 +1,4 @@
-function [p, t] = mw_beamforming(y, tau, window_len, window_ofs)
+function [p, t] = mw_beamforming(y, window_len, window_ofs, tau, varargin)
 % Moving window beamforming
     
     N = size(y, 2);    
@@ -12,9 +12,9 @@ function [p, t] = mw_beamforming(y, tau, window_len, window_ofs)
         range = w_begin(iw) : w_begin(iw) + window_len - 1;
 
         % Calculate the power for current window.
-        p(:, iw) = beamforming(y(:, range), tau);
+        p(:, iw) = beamforming(y(:, range), tau, varargin{:});
     end
     
-    t = w_begin - 1 + window_len / 2;
+    t = w_begin - 1;
 end
 

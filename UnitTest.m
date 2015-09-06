@@ -68,8 +68,12 @@ classdef UnitTest < matlab.unittest.TestCase
             y(:, end + 1 : end + max_overlap) = 0;
             
             % Beamforming
-            y1 = beamforming(y, -tau);
-            p = sum(y1.^2, 2);
+            if mod(size(y, 2), 2) == 0
+                y(:, end + 1) = 0;
+            end
+            
+            Y1 = beamforming(fft(y, [], 2), fft_freq_vector(size(y, 2)), -tau);
+            p = sum(Y1 .* conj(Y1), 2);
             p = reshape(p, size(Phi));
             
             % Find angle corresponding to maximum energy.
@@ -112,7 +116,11 @@ classdef UnitTest < matlab.unittest.TestCase
             testCase.assertEqual(size(y, 2), frame_length);
             
             % Beamforming
-            p = beamforming(y, -tau, freq_band / fs);
+            f = fft_freq_vector(size(y, 2));
+            ind = freq_band(1) <= abs(f * fs) & abs(f * fs) <= freq_band(2);
+            Y = fft(y, [], 2);
+            Y1 = beamforming(Y(:, ind), f(ind), -tau);
+            p = sum(Y1 .* conj(Y1), 2);
             p = reshape(p, size(Phi));
             
             % Find angle corresponding to maximum energy.

@@ -6,7 +6,7 @@ r = sensor_position() / v;
 db = Database();
 
 %% Load signal
-[y, fs] = db.getAudioData(1);
+[y, fs] = db.getAudioData(2);
 
 %% Init angles and lags.
 phi = linspace(0, 2 * pi, 361);

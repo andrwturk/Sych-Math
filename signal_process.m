@@ -17,7 +17,7 @@ function y = signal_process(x, tau, passband, sig)
     % Length of fft buffer.
     N = Nt + Ns - 1;
     
-    %    Make N odd, for correct frequency-domain shift.
+    % Make N odd, for correct frequency-domain shift.
     if mod(N, 2) == 0
         N = N + 1;
     end
@@ -42,7 +42,7 @@ function y = signal_process(x, tau, passband, sig)
     ind = passband(1) <= abs(f) & abs(f) <= passband(2);
     
     Y = zeros(Nk, N);
-    Y(:, ind) = beamforming(X(:, ind), f, -tau);
+    Y(:, ind) = beamforming(X(:, ind), f(ind), -tau);
 
     % ** Convert to time domain **
     y = ifft(Y, [], 2);

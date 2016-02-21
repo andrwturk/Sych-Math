@@ -3,9 +3,6 @@ classdef FilterBeamformer < handle
     % beamforming. Processes the data framewise.
     
     properties (SetAccess = private)
-        % In/out signal sampling frequency, [Hz].
-        fs;
-        
         % passBand [1 x 2] -- frequency passband (in normalized frequency units).
         %   Only the frequencies within the passband are processed.
         passBand;
@@ -21,14 +18,11 @@ classdef FilterBeamformer < handle
         % I.e., tau(k, i) = delay for channel k and DoA [Theta(i), Phi(i)].
         tau;
         
-        % Asimuth of direction of arrival.
-        theta;
-        
-        % Elevation alngle of direction of arrival.
-        phi;
-        
-        % Frequency-domain signal to detect with the correlation filter.
+        % Frequency-domain signal to detect with the correlation filter (signature).
         S;
+        
+        % Length of the signature signal in samples. 
+        sigLength;
         
         % Maximum length of the processing frame in samples.
         frameLength;
@@ -43,34 +37,36 @@ classdef FilterBeamformer < handle
     properties (Dependent = true)
         % Number of channels (microphones).
         numChannels;
+        
+        % Number of DoA (directions of arrival).
+        numDirections;
     end
     
     methods
-        function this = FilterBeamformer(frame_length)
+        function this = FilterBeamformer(sig, tau, frame_length)
+            % Constructor.
+            %
+            % sig -- trequency-domain signal to detect with the correlation
+            %   filter (signature). Must be a row vector.
+            % tau [K x M] -- matrix of channel delays. Rows of tau correspond to channels,
+            %   columns correspond to different directions of arrival (DoA). 
+            %   I.e., tau(k, i) = delay for channel k and DoA i.
+            % frame_length -- length of data processing frame in samples.
+            
             % Init sensor array.
-            v = sound_speed_air(293);
-            r = sensor_position() / v;
-            
-            % Init angles and lags.
-            phi = linspace(0, 2 * pi, 361);
-            theta = 0;
-            [Phi, Theta] = meshgrid(phi, theta);
-            
-            fs = 51000;
-            tau = -r.' * direction(Phi(:).', Theta(:).') * fs;
+            assert(ismatrix(tau));
             tau = tau - max(tau(:));    % Make all tau's non-positive (-tau non-negative), so that the the first samples
                                         % do not come in the end of the (padded) buffer due to negative
                                         % circular shifts. This naturally introduces additional delay to output signal.
             
             % Init correlation filter
-            S_data = load('data/sig.mat', 'sig');    % Load AK-47 muzzleflash signature signal
-            sig = S_data.sig;
             assert(isrow(sig));
             
             % Length of fft buffer. Pad the buffer so that circular
             % convolution of signal frame with sig followed by the
             % beamforming time shift does not wrap around.
-            N = frame_length + Ns - 1 + ceil(max(tau(:)));
+            Ns = length(sig);
+            N = frame_length + Ns - 1 + ceil(max(-tau(:)));
             
             % Make N odd, for correct frequency-domain shift.
             if mod(N, 2) == 0
@@ -91,37 +87,47 @@ classdef FilterBeamformer < handle
             ind = passband(1) <= abs(f) & abs(f) <= passband(2);
 
             % Init properties.            
-            this.fs     = fs;
             this.tau    = tau;
-            this.phi    = Phi;
-            this.theta  = Theta;
             this.S      = S;
+            this.sigLength      = Ns;
             this.frameLength    = frame_length;
             this.bufferLength   = N;
             this.passBand       = passband;
             this.passBandFreqInd    = ind;
             this.passBandFreq       = f(ind);
+            this.tail   = zeros(size(tau, 2), N - frame_length);
         end
         
         function y = ProcessFrame(this, x)
+            % Process data frame.
+            %
+            % x -- [numChannels x frameLength] matrix of input signal
+            %   samples in time domain.
+            % returns
+            % y -- [numDirections x frameLength] filtered-beamformed
+            %   signal. y(i, t) is filtered signal intensity from direction
+            %   i at time t.
+            
             % ** Get sizes **
             assert(ismatrix(x) && size(x, 1) == this.numChannels);
             Nt = size(x, 2);
             assert(Nt == this.frameLength);
             Nk = size(this.tau, 2);
     
-            % Pad x with zeros.
-            x(:, end + 1 : this.bufferLength) = 0;
+            % Pad x with zeros from left and right.
+            x_ = zeros(this.numChannels, this.bufferLength);
+            x_(:, this.sigLength + (0 : Nt - 1)) = x;
 
             % ** Convert x to frequency domain **
-            X = fft(x, [], 2);
-
+            X = fft(x_, [], 2);
+            
             % ** Compute correlation **
-            X = X .* repmat(conj(this.S), Nc, 1);
-
+            X = X .* repmat(conj(this.S), this.numChannels, 1);
+   
             % ** Beamforming **
-            Y = zeros(Nk, N);
-            Y(:, this.passBandFreqInd) = beamforming(X(:, this.passBandFreqInd), f(this.passBandFreqInd), -this.tau);
+            assert(all(-this.tau(:) >= 0));
+            Y = zeros(Nk, this.bufferLength);
+            Y(:, this.passBandFreqInd) = beamforming(X(:, this.passBandFreqInd), this.passBandFreq, -this.tau);
 
             % ** Convert to time domain **
             y = ifft(Y, [], 2);
@@ -140,6 +146,10 @@ classdef FilterBeamformer < handle
         
         function val = get.numChannels(this)
             val = size(this.tau, 1);
+        end
+        
+        function val = get.numDirections(this)
+            val = size(this.tau, 2);
         end
     end
     
